@@ -58,8 +58,6 @@ with tab2:
     primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0, key="primary_weight")
     secondary_weight = st.number_input(f"Secondary Loaded Weight ({weight_unit})", min_value=0.0, key="secondary_weight")
 
-    fragile = st.checkbox("Fragile?", key="fragile")
-
 # --- Convert to metric for calculations ---
 if unit_system.startswith("Imperial"):
     primary_L_cm = in_to_cm(primary_L)
@@ -111,7 +109,7 @@ with tab3:
             st.write(f"Parts per container: {parts_per_container}")
             st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
 
-            # --- Realistic 3D Visualization ---
+            # Visualization
             fig = go.Figure()
 
             # Container wireframe
@@ -185,21 +183,48 @@ with tab3:
 
             st.plotly_chart(fig, use_container_width=True)
 
-# --- Submission Section ---
-if st.button("Submit Packaging Info", key="submit_btn"):
-    submission = {
-        "Material": material,
-        "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
-        "Weight": f"{primary_weight} ({weight_unit})",
-        "Supplier Name": supplier_name,
-        "Supplier Code": supplier_code,
-        "Contact": supplier_contact,
-        "Email": supplier_email,
-        "Phone": supplier_phone,
-        "Fragile": fragile
-    }
-    st.session_state["submissions"].append(submission)
-    st.success("Submission added!")
+    # Upload ISTA/UN Testing Documents
+    st.subheader("Upload Testing Documents")
+    uploaded_files = st.file_uploader("Upload ISTA / UN Testing Reports", type=["pdf", "xlsx", "csv"], accept_multiple_files=True)
+    if uploaded_files:
+        st.write("Uploaded Files:")
+        for file in uploaded_files:
+            st.write(f"- {file.name}")
 
-st.write("Current Submissions:")
-st.dataframe(pd.DataFrame(st.session_state["submissions"]))
+    # Upload Packaging Images
+    st.subheader("Upload Packaging Images")
+    primary_img = st.file_uploader("Primary Packaging Image", type=["jpg", "jpeg", "png"], key="primary_img")
+    secondary_img = st.file_uploader("Secondary Packaging Image", type=["jpg", "jpeg", "png"], key="secondary_img")
+    unit_load_img = st.file_uploader("Full Unit Load Image", type=["jpg", "jpeg", "png"], key="unit_load_img")
+
+    if primary_img: st.image(primary_img, caption="Primary Packaging", use_column_width=True)
+    if secondary_img: st.image(secondary_img, caption="Secondary Packaging", use_column_width=True)
+    if unit_load_img: st.image(unit_load_img, caption="Full Unit Load", use_column_width=True)
+
+    # Submission Section
+    if st.button("Submit Packaging Info", key="submit_btn"):
+        submission = {
+            "Supplier Name": supplier_name,
+            "Supplier Code": supplier_code,
+            "Contact": supplier_contact,
+            "Email": supplier_email,
+            "Phone": supplier_phone,
+            "Material": material,
+            "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
+            "Weight": f"{primary_weight} ({weight_unit})",
+            "Fragile": False,
+            "Uploaded Files": [file.name for file in uploaded_files] if uploaded_files else [],
+            "Primary Image": primary_img.name if primary_img else "",
+            "Secondary Image": secondary_img.name if secondary_img else "",
+            "Unit Load Image": unit_load_img.name if unit_load_img else ""
+        }
+        st.session_state["submissions"].append(submission)
+        st.success("Submission added!")
+
+    st.write("Current Submissions:")
+    st.dataframe(pd.DataFrame(st.session_state["submissions"]))
+
+    # Export Button
+    if st.button("Download Submissions as CSV"):
+        df = pd.DataFrame(st.session_state["submissions"])
+        st.download_button("Download CSV", df.to_csv(index=False), "submissions.csv", "text/csv")
