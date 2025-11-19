@@ -55,7 +55,6 @@ with tab2:
 
     st.subheader("Weights")
     primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0, key="primary_weight")
-    secondary_weight = st.number_input(f"Secondary Loaded Weight ({weight_unit})", min_value=0.0, key="secondary_weight")
 
     # Convert to metric for calculations
     if unit_system.startswith("Imperial"):
@@ -86,6 +85,17 @@ with tab2:
         total_boxes_per_pallet = 0
         quantity_secondary = 0
         st.info("Enter all dimensions to calculate pallet results.")
+
+    # Auto-calculate secondary weight
+    pallet_weight_lb = 25
+    pallet_weight_kg = pallet_weight_lb / 2.20462
+    if total_boxes_per_pallet > 0 and primary_weight > 0:
+        secondary_weight = (primary_weight * total_boxes_per_pallet) + (pallet_weight_lb if unit_system.startswith("Imperial") else pallet_weight_kg)
+    else:
+        secondary_weight = 0.0
+
+    # Display secondary weight as disabled input
+    st.number_input(f"Secondary Loaded Weight ({weight_unit})", value=secondary_weight, disabled=True, key="secondary_weight")
 
     # --- Container Analysis ---
     st.subheader("Container Analysis")
@@ -217,6 +227,7 @@ with tab3:
             "Weight": f"{primary_weight} ({weight_unit})",
             "Quantity per Primary": quantity_primary,
             "Quantity per Secondary": quantity_secondary,
+            "Secondary Weight": secondary_weight,
             "Selected Container": selected_container,
             "Uploaded Files": [file.name for file in uploaded_files] if uploaded_files else [],
             "Primary Image": primary_img.name if primary_img else "",
@@ -233,3 +244,4 @@ with tab3:
     if st.button("Download Submissions as CSV"):
         df = pd.DataFrame(st.session_state["submissions"])
         st.download_button("Download CSV", df.to_csv(index=False), "submissions.csv", "text/csv")
+
