@@ -19,10 +19,39 @@ def kg_to_lb(kg): return kg * 2.20462
 def lb_to_kg(lb): return lb / 2.20462
 
 # --- Tabs ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Supplier Info", "Packaging Info", "Upload & Images", "Supplier Dashboard", "Search & Filter"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Search & Filter", "Supplier Info", "Packaging Info", "Upload & Images", "Supplier Dashboard"])
 
-# --- Tab 1: Supplier Info ---
+# --- Tab 1: Search & Filter (Placeholder) ---
 with tab1:
+    st.header("Search & Filter")
+    st.write("This feature will allow you to search and pull up the correct form to place a submission.")
+
+    # Mock search fields
+    supplier_filter = st.text_input("Search by Supplier Name")
+    supplier_code_filter = st.text_input("Search by Supplier Code")
+    part_name_filter = st.text_input("Search by Part Name")
+    part_number_filter = st.text_input("Search by Part Number")
+    part_group_filter = st.text_input("Search by Part Group")
+
+    st.info("Currently a placeholder for future functionality.")
+
+    # Mock table for search results
+    st.subheader("Mock Search Results")
+    mock_data = pd.DataFrame({
+        "Supplier Name": ["ABC Packaging", "XYZ Supplies"],
+        "Supplier Code": ["SUP123", "SUP456"],
+        "Part Name": ["Widget A", "Widget B"],
+        "Part Number": ["PN001", "PN002"],
+        "Part Group": ["Group 1", "Group 2"]
+    })
+
+    for i, row in mock_data.iterrows():
+        st.write(f"**Supplier:** {row['Supplier Name']} | **Part:** {row['Part Name']} | **Part Number:** {row['Part Number']}")
+        if st.button(f"Go to Submission Form for {row['Supplier Name']}", key=f"go_{i}"):
+            st.success(f"Simulating navigation to submission form for {row['Supplier Name']}...")
+
+# --- Tab 2: Supplier Info ---
+with tab2:
     st.header("Supplier Information")
     supplier_name = st.text_input("Supplier Name", key="supplier_name")
     supplier_code = st.text_input("Supplier Code", key="supplier_code")
@@ -35,8 +64,8 @@ with tab1:
     part_number = st.text_input("Part Number", key="part_number")
     part_group = st.text_input("Part Group", key="part_group")
 
-# --- Tab 2: Packaging Info ---
-with tab2:
+# --- Tab 3: Packaging Info ---
+with tab3:
     st.header("Packaging Details")
 
     unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], key="unit_system")
@@ -143,8 +172,8 @@ with tab2:
 
         st.plotly_chart(fig, use_container_width=True)
 
-# --- Tab 3: Upload & Images ---
-with tab3:
+# --- Tab 4: Upload & Images ---
+with tab4:
     st.header("Upload Testing & Images")
     uploaded_files = st.file_uploader("Upload ISTA / UN Testing Reports", type=["pdf", "xlsx", "csv"], accept_multiple_files=True)
     primary_img = st.file_uploader("Primary Packaging Image", type=["jpg", "jpeg", "png"], key="primary_img")
@@ -180,8 +209,8 @@ with tab3:
         st.session_state["submissions"].append(submission)
         st.success("Submission added!")
 
-# --- Tab 4: Supplier Dashboard ---
-with tab4:
+# --- Tab 5: Supplier Dashboard ---
+with tab5:
     st.header("Supplier Dashboard")
     if st.session_state["submissions"]:
         df = pd.DataFrame(st.session_state["submissions"])
@@ -196,28 +225,3 @@ with tab4:
         st.dataframe(df)
     else:
         st.info("No submissions yet.")
-
-# --- Tab 5: Search & Filter ---
-with tab5:
-    st.header("Search & Filter")
-    if st.session_state["submissions"]:
-        df = pd.DataFrame(st.session_state["submissions"])
-        supplier_filter = st.text_input("Filter by Supplier Name or Code")
-        part_name_filter = st.text_input("Filter by Part Name")
-        part_number_filter = st.text_input("Filter by Part Number")
-        part_group_filter = st.text_input("Filter by Part Group")
-
-        if supplier_filter:
-            df = df[df["Supplier Name"].str.contains(supplier_filter, case=False) | df["Supplier Code"].str.contains(supplier_filter, case=False)]
-        if part_name_filter:
-            df = df[df["Part Name"].str.contains(part_name_filter, case=False)]
-        if part_number_filter:
-            df = df[df["Part Number"].str.contains(part_number_filter, case=False)]
-        if part_group_filter:
-            df = df[df["Part Group"].str.contains(part_group_filter, case=False)]
-
-        st.dataframe(df)
-    else:
-        st.info("No submissions yet.")
-
-
