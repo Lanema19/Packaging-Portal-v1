@@ -97,6 +97,18 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
 else:
     st.warning("Enter pallet dimensions to calculate cube utilization.")
 
+# NEW: Calculate Primary Boxes per Pallet
+st.subheader("Primary Boxes per Pallet Calculation")
+if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
+    boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
+    layers = int(secondary_D_cm // primary_D_cm)
+    total_boxes = boxes_per_layer * layers
+    st.write(f"Boxes per layer: {boxes_per_layer}")
+    st.write(f"Number of layers: {layers}")
+    st.success(f"Total Primary Boxes per Pallet: {total_boxes}")
+else:
+    st.info("Enter all dimensions to calculate boxes per pallet.")
+
 # Container-based stacking validation
 st.subheader("Container Fit & Stacking Validation")
 container_specs = {
@@ -111,7 +123,6 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         max_stack_height = specs["H"]
         max_stack_weight = specs["MaxWeight"]
 
-        # Calculate stacking
         total_stack_height = secondary_D_cm * quantity_secondary
         total_stack_weight = secondary_weight_kg * quantity_secondary
 
