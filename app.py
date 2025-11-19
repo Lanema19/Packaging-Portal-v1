@@ -49,17 +49,19 @@ with st.form("compact_form"):
         quantity_primary = st.number_input("Qty per Primary", min_value=1, key="quantity_primary")
     with col8:
         primary_weight_metric = st.number_input("Primary Weight (kg)", min_value=0.0, key="primary_weight_metric")
-    with col9:
-        st.markdown("**Primary Box Dimensions**")
-        dim1, dim2, dim3 = st.columns(3)
-        with dim1:
-            primary_L_cm = st.number_input("Length", min_value=0.0, key="primary_L_cm")
-        with dim2:
-            primary_W_cm = st.number_input("Width", min_value=0.0, key="primary_W_cm")
-        with dim3:
-            primary_D_cm = st.number_input("Depth", min_value=0.0, key="primary_D_cm")
 
-    st.markdown("**Pallet Dimensions**")
+    # --- Primary Box Dimensions ---
+    st.markdown(f"**Primary Box Dimensions ({length_unit})**")
+    dim1, dim2, dim3 = st.columns(3)
+    with dim1:
+        primary_L_cm = st.number_input("Length", min_value=0.0, key="primary_L_cm")
+    with dim2:
+        primary_W_cm = st.number_input("Width", min_value=0.0, key="primary_W_cm")
+    with dim3:
+        primary_D_cm = st.number_input("Depth", min_value=0.0, key="primary_D_cm")
+
+    # --- Pallet Dimensions ---
+    st.markdown(f"**Pallet Dimensions ({length_unit})**")
     pdim1, pdim2, pdim3 = st.columns(3)
     with pdim1:
         secondary_L_cm = st.number_input("Length", min_value=0.0, key="secondary_L_cm")
@@ -154,4 +156,3 @@ if st.session_state["submissions"]:
     st.dataframe(df)
 else:
     st.info("No submissions yet.")
-
