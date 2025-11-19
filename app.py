@@ -20,51 +20,51 @@ def lb_to_kg(lb): return lb / 2.20462
 
 # --- Expanders for Sections ---
 with st.expander("Packaging Details"):
-    material = st.selectbox("Material Type", ["Corrugated", "Plastic", "Metal", "Other"])
-    sustainability = st.multiselect("Sustainability Indicators", ["Recyclable", "Reusable", "Biodegradable"])
+    material = st.selectbox("Material Type", ["Corrugated", "Plastic", "Metal", "Other"], key="material")
+    sustainability = st.multiselect("Sustainability Indicators", ["Recyclable", "Reusable", "Biodegradable"], key="sustainability")
 
-    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"])
+    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], key="unit_system")
 
     st.subheader("Primary Dimensions")
-    primary_L = st.number_input("Length", min_value=0.0)
-    primary_W = st.number_input("Width", min_value=0.0)
-    primary_D = st.number_input("Depth", min_value=0.0)
+    primary_L = st.number_input("Length", min_value=0.0, key="primary_L")
+    primary_W = st.number_input("Width", min_value=0.0, key="primary_W")
+    primary_D = st.number_input("Depth", min_value=0.0, key="primary_D")
 
     st.subheader("Secondary (Pallet) Dimensions")
-    secondary_L = st.number_input("Length", min_value=0.0)
-    secondary_W = st.number_input("Width", min_value=0.0)
-    secondary_D = st.number_input("Height", min_value=0.0)
+    secondary_L = st.number_input("Length", min_value=0.0, key="secondary_L")
+    secondary_W = st.number_input("Width", min_value=0.0, key="secondary_W")
+    secondary_D = st.number_input("Height", min_value=0.0, key="secondary_D")
 
-    quantity_primary = st.number_input("Quantity per Primary Container", min_value=1)
-    quantity_secondary = st.number_input("Quantity per Secondary Container", min_value=1)
+    quantity_primary = st.number_input("Quantity per Primary Container", min_value=1, key="quantity_primary")
+    quantity_secondary = st.number_input("Quantity per Secondary Container", min_value=1, key="quantity_secondary")
 
     st.subheader("Weights")
-    primary_weight = st.number_input("Primary Loaded Weight", min_value=0.0)
-    secondary_weight = st.number_input("Secondary Loaded Weight", min_value=0.0)
+    primary_weight = st.number_input("Primary Loaded Weight", min_value=0.0, key="primary_weight")
+    secondary_weight = st.number_input("Secondary Loaded Weight", min_value=0.0, key="secondary_weight")
 
 with st.expander("Part Details"):
-    part_length = st.number_input("Part Length", min_value=0.0)
-    part_width = st.number_input("Part Width", min_value=0.0)
-    part_depth = st.number_input("Part Depth", min_value=0.0)
-    part_weight = st.number_input("Part Weight", min_value=0.0)
-    fragile = st.checkbox("Fragile?")
-    hazard_code = st.text_input("Hazard Classification (UN/DG Code)")
+    part_length = st.number_input("Part Length", min_value=0.0, key="part_length")
+    part_width = st.number_input("Part Width", min_value=0.0, key="part_width")
+    part_depth = st.number_input("Part Depth", min_value=0.0, key="part_depth")
+    part_weight = st.number_input("Part Weight", min_value=0.0, key="part_weight")
+    fragile = st.checkbox("Fragile?", key="fragile")
+    hazard_code = st.text_input("Hazard Classification (UN/DG Code)", key="hazard_code")
 
 with st.expander("General Info"):
-    supplier_name = st.text_input("Supplier Name")
-    supplier_location = st.text_input("Supplier Location")
-    supplier_contact = st.text_input("Supplier Contact")
+    supplier_name = st.text_input("Supplier Name", key="supplier_name")
+    supplier_location = st.text_input("Supplier Location", key="supplier_location")
+    supplier_contact = st.text_input("Supplier Contact", key="supplier_contact")
 
 with st.expander("Uploads"):
-    uploaded_images = st.file_uploader("Upload Packaging Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
+    uploaded_images = st.file_uploader("Upload Packaging Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"], key="images_uploader")
     if uploaded_images:
         st.write("Preview of Uploaded Images:")
         cols = st.columns(len(uploaded_images))
         for idx, img_file in enumerate(uploaded_images):
             img = Image.open(img_file)
-            cols[idx].image(img, caption=f"Image {idx+1}", use_column_width=True)
+            cols[idx].image(img, caption=f"Image {idx+1}", use_column_width=True, key=f"image_{idx}")
 
-    uploaded_docs = st.file_uploader("Upload Compliance Documents", accept_multiple_files=True, type=["pdf", "docx"])
+    uploaded_docs = st.file_uploader("Upload Compliance Documents", accept_multiple_files=True, type=["pdf", "docx"], key="docs_uploader")
     if uploaded_docs:
         st.write("Uploaded Documents:")
         for doc in uploaded_docs:
@@ -127,7 +127,7 @@ else:
     st.info("Enter pallet dimensions to validate container fit and stacking.")
 
 # --- Submission Section ---
-if st.button("Submit Packaging Info"):
+if st.button("Submit Packaging Info", key="submit_btn"):
     submission = {
         "Material": material,
         "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({unit_system})",
