@@ -112,14 +112,13 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         ))
 
         # Pallets inside container
-        pallet_boxes = []
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
                     x0 = r * secondary_L_cm
                     y0 = c * secondary_W_cm
                     z0 = s * secondary_D_cm
-                    pallet_boxes.append(go.Mesh3d(
+                    fig.add_trace(go.Mesh3d(
                         x=[x0, x0+secondary_L_cm, x0+secondary_L_cm, x0, x0, x0+secondary_L_cm, x0+secondary_L_cm, x0],
                         y=[y0, y0, y0+secondary_W_cm, y0+secondary_W_cm, y0, y0, y0+secondary_W_cm, y0+secondary_W_cm],
                         z=[z0, z0, z0, z0, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm],
@@ -127,9 +126,6 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                         opacity=0.5,
                         name='Pallet'
                     ))
-
-        for pallet in pallet_boxes:
-            fig.add_trace(pallet)
 
         fig.update_layout(
             scene=dict(
@@ -160,4 +156,3 @@ if st.button("Submit Packaging Info", key="submit_btn"):
 
 st.write("Current Submissions:")
 st.dataframe(pd.DataFrame(st.session_state["submissions"]))
-
