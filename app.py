@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 
 # --- App Config ---
 st.set_page_config(page_title="📦 Supplier Packaging Portal", layout="wide")
@@ -49,10 +48,15 @@ with st.form("compact_form"):
         quantity_primary = st.number_input("Qty per Primary", min_value=1)
     with col8:
         primary_weight = st.number_input(f"Primary Weight ({weight_unit})", min_value=0.0)
-        primary_L = st.number_input(f"Length ({length_unit})", min_value=0.0)
     with col9:
-        primary_W = st.number_input(f"Width ({length_unit})", min_value=0.0)
-        primary_D = st.number_input(f"Depth ({length_unit})", min_value=0.0)
+        st.markdown("**Primary Box Dimensions**")
+        dim1, dim2, dim3 = st.columns(3)
+        with dim1:
+            primary_L = st.number_input(f"Length ({length_unit})", min_value=0.0)
+        with dim2:
+            primary_W = st.number_input(f"Width ({length_unit})", min_value=0.0)
+        with dim3:
+            primary_D = st.number_input(f"Depth ({length_unit})", min_value=0.0)
 
     st.markdown("**Pallet Dimensions**")
     col10, col11, col12 = st.columns(3)
@@ -120,6 +124,7 @@ if submitted:
     st.metric("Total Boxes per Pallet", total_boxes_per_pallet)
     st.metric("Qty per Secondary", quantity_secondary)
     st.metric("Secondary Weight", f"{secondary_weight:.2f} {weight_unit}")
+    st.metric("Pallets per Container", pallets_per_container)
     st.metric("Container Utilization", f"{utilization:.2f}%")
 
     # Save submission
@@ -139,6 +144,7 @@ if submitted:
         "Quantity per Secondary": quantity_secondary,
         "Secondary Weight": secondary_weight,
         "Selected Container": selected_container,
+        "Pallets per Container": pallets_per_container,
         "Utilization": utilization
     }
     st.session_state["submissions"].append(submission)
@@ -157,5 +163,3 @@ if st.session_state["submissions"]:
     st.dataframe(df)
 else:
     st.info("No submissions yet.")
-
-
