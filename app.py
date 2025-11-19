@@ -70,7 +70,7 @@ with tab2:
         primary_L_cm, primary_W_cm, primary_D_cm = primary_L, primary_W, primary_D
         secondary_L_cm, secondary_W_cm, secondary_D_cm = secondary_L, secondary_W, secondary_D
 
-    # --- Calculated Results at bottom of Packaging Info tab ---
+    # --- Calculated Results ---
     st.subheader("Calculated Pallet Results")
     if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
@@ -83,11 +83,8 @@ with tab2:
         total_boxes_per_pallet = 0
         st.info("Enter all dimensions to calculate pallet results.")
 
-# --- Tab 3: Results ---
-with tab3:
-    st.header("Container Analysis")
-
-    # Dropdown to select container
+    # --- Container Analysis under Packaging Info ---
+    st.subheader("Container Analysis")
     container_specs = {
         "40' Standard": {"L": 1200, "W": 235, "H": 239},
         "40' High Cube": {"L": 1200, "W": 235, "H": 270},
@@ -107,7 +104,7 @@ with tab3:
 
         st.write(f"**Cube Utilization for {selected_container}:** {utilization:.2f}%")
 
-        # 3D Visualization for selected container
+        # 3D Visualization
         fig = go.Figure()
 
         # Container wireframe
@@ -181,6 +178,10 @@ with tab3:
 
         st.plotly_chart(fig, use_container_width=True)
 
+# --- Tab 3: Results ---
+with tab3:
+    st.header("Upload Testing & Images")
+
     # Upload ISTA/UN Testing Documents
     st.subheader("Upload Testing Documents")
     uploaded_files = st.file_uploader("Upload ISTA / UN Testing Reports", type=["pdf", "xlsx", "csv"], accept_multiple_files=True)
@@ -211,7 +212,6 @@ with tab3:
             "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
             "Weight": f"{primary_weight} ({weight_unit})",
             "Selected Container": selected_container,
-            "Cube Utilization": f"{utilization:.2f}%",
             "Uploaded Files": [file.name for file in uploaded_files] if uploaded_files else [],
             "Primary Image": primary_img.name if primary_img else "",
             "Secondary Image": secondary_img.name if secondary_img else "",
