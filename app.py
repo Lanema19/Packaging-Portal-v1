@@ -88,29 +88,29 @@ else:
     secondary_L_cm, secondary_W_cm, secondary_D_cm = secondary_L, secondary_W, secondary_D
     primary_weight_kg, secondary_weight_kg = primary_weight, secondary_weight
 
-# Cube utilization
+# Cube utilization for pallet
 if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
     pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
     package_volume = primary_L_cm * primary_W_cm * primary_D_cm * quantity_primary
     cube_utilization = (package_volume / pallet_volume) * 100 if pallet_volume > 0 else 0
-    st.metric("Cube Utilization (%)", f"{cube_utilization:.2f}")
+    st.metric("Cube Utilization (Pallet) (%)", f"{cube_utilization:.2f}")
 else:
     st.warning("Enter pallet dimensions to calculate cube utilization.")
 
-# NEW: Calculate Primary Boxes per Pallet
+# Primary Boxes per Pallet
 st.subheader("Primary Boxes per Pallet Calculation")
 if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
     boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
     layers = int(secondary_D_cm // primary_D_cm)
-    total_boxes = boxes_per_layer * layers
+    total_boxes_per_pallet = boxes_per_layer * layers
     st.write(f"Boxes per layer: {boxes_per_layer}")
     st.write(f"Number of layers: {layers}")
-    st.success(f"Total Primary Boxes per Pallet: {total_boxes}")
+    st.success(f"Total Primary Boxes per Pallet: {total_boxes_per_pallet}")
 else:
     st.info("Enter all dimensions to calculate boxes per pallet.")
 
-# Container-based stacking validation
-st.subheader("Container Fit & Stacking Validation")
+# Container Fit, Pallets per Container, Parts per Container & Cube Utilization
+st.subheader("Container Fit, Pallets per Container, Parts per Container & Cube Utilization")
 container_specs = {
     "40' Standard": {"L": 1200, "W": 235, "H": 239, "MaxWeight": 28000},
     "40' High Cube": {"L": 1200, "W": 235, "H": 270, "MaxWeight": 28000},
@@ -119,14 +119,24 @@ container_specs = {
 
 if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
     for name, specs in container_specs.items():
+        container_volume = specs["L"] * specs["W"] * specs["H"]
         fits = secondary_L_cm <= specs["L"] and secondary_W_cm <= specs["W"]
+
+        pallets_per_container = int(specs["L"] // secondary_L_cm) * int(specs["W"] // secondary_W_cm)
+        parts_per_container = pallets_per_container * total_boxes_per_pallet if 'total_boxes_per_pallet' in locals() else 0
+        utilization = ((pallet_volume * pallets_per_container) / container_volume) * 100 if container_volume > 0 else 0
+
+        st.write(f"**{name}**")
+        st.write(f"Pallets per container: {pallets_per_container}")
+        st.write(f"Parts per container: {parts_per_container}")
+        st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
+
+        # Stacking validation
         max_stack_height = specs["H"]
         max_stack_weight = specs["MaxWeight"]
-
         total_stack_height = secondary_D_cm * quantity_secondary
         total_stack_weight = secondary_weight_kg * quantity_secondary
 
-        st.write(f"**{name}**")
         if fits:
             if total_stack_height <= max_stack_height and total_stack_weight <= max_stack_weight:
                 st.success(f"✅ Fits and stacking within limits (Height: {total_stack_height:.2f} cm, Weight: {total_stack_weight:.2f} kg)")
@@ -135,7 +145,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         else:
             st.error("❌ Pallet does NOT fit in this container.")
 else:
-    st.info("Enter pallet dimensions to validate container fit and stacking.")
+    st.info("Enter pallet dimensions to validate container fit and utilization.")
 
 # --- Submission Section ---
 if st.button("Submit Packaging Info", key="submit_btn"):
@@ -151,3 +161,4 @@ if st.button("Submit Packaging Info", key="submit_btn"):
 
 st.write("Current Submissions:")
 st.dataframe(pd.DataFrame(st.session_state["submissions"]))
+
