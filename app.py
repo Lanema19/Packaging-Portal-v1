@@ -1,39 +1,16 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
-import json
-from io import BytesIO
 
 # --- App Config ---
 st.set_page_config(page_title="📦 Supplier Packaging Portal", layout="wide")
 
-# --- Mock Authentication ---
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-    st.session_state["role"] = "Supplier"
+st.title("📦 Supplier Packaging Portal")
+st.write("Manage packaging details, validate container fit, and calculate utilization.")
 
-if not st.session_state["authenticated"]:
-    st.title("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    role = st.selectbox("Role", ["Supplier", "Admin"])
-    if st.button("Login"):
-        if username and password:
-            st.session_state["authenticated"] = True
-            st.session_state["role"] = role
-            st.success(f"Logged in as {role}")
-        else:
-            st.error("Please enter username and password")
-    st.stop()
-
-# --- Session State for Submissions ---
+# --- Session State ---
 if "submissions" not in st.session_state:
     st.session_state["submissions"] = []
-
-# --- Sidebar Navigation ---
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Packaging Info", "Analytics", "Export", "API Simulation"])
 
 # --- Conversion Functions ---
 def cm_to_in(cm): return cm / 2.54
@@ -41,40 +18,47 @@ def in_to_cm(inch): return inch * 2.54
 def kg_to_lb(kg): return kg * 2.20462
 def lb_to_kg(lb): return lb / 2.20462
 
-# --- Sustainability Score ---
-def calculate_sustainability_score(indicators):
-    score = len(indicators) * 33  # Each indicator adds 33 points
-    return min(score, 100)
+# --- Tabs ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Supplier Info", "Packaging Info", "Upload & Images", "Supplier Dashboard", "Search & Filter"])
 
-# --- Cost Estimation ---
-def estimate_cost(material, weight):
-    base_cost = {"Corrugated": 0.5, "Plastic": 0.8, "Metal": 1.2, "Other": 0.6}
-    return round(base_cost.get(material, 0.6) * weight, 2)
+# --- Tab 1: Supplier Info ---
+with tab1:
+    st.header("Supplier Information")
+    supplier_name = st.text_input("Supplier Name", key="supplier_name")
+    supplier_code = st.text_input("Supplier Code", key="supplier_code")
+    supplier_contact = st.text_input("Contact Person", key="supplier_contact")
+    supplier_email = st.text_input("Email", key="supplier_email")
+    supplier_phone = st.text_input("Phone", key="supplier_phone")
 
-# --- Page: Packaging Info ---
-if page == "Packaging Info":
-    st.title("📦 Packaging Information")
+    st.subheader("Part Details")
+    part_name = st.text_input("Part Name", key="part_name")
+    part_number = st.text_input("Part Number", key="part_number")
+    part_group = st.text_input("Part Group", key="part_group")
 
-    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"])
+# --- Tab 2: Packaging Info ---
+with tab2:
+    st.header("Packaging Details")
+
+    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], key="unit_system")
     length_unit = "cm" if unit_system.startswith("Metric") else "in"
     weight_unit = "kg" if unit_system.startswith("Metric") else "lb"
 
-    supplier_name = st.text_input("Supplier Name")
-    material = st.selectbox("Material Type", ["Corrugated", "Plastic", "Metal", "Other"])
-    sustainability = st.multiselect("Sustainability Indicators", ["Recyclable", "Reusable", "Biodegradable"])
+    material = st.selectbox("Material Type", ["Corrugated", "Plastic", "Metal", "Other"], key="material")
 
     st.subheader("Primary Dimensions")
-    primary_L = st.number_input(f"Length ({length_unit})", min_value=0.0)
-    primary_W = st.number_input(f"Width ({length_unit})", min_value=0.0)
-    primary_D = st.number_input(f"Depth ({length_unit})", min_value=0.0)
+    primary_L = st.number_input(f"Length ({length_unit})", min_value=0.0, key="primary_L")
+    primary_W = st.number_input(f"Width ({length_unit})", min_value=0.0, key="primary_W")
+    primary_D = st.number_input(f"Depth ({length_unit})", min_value=0.0, key="primary_D")
 
     st.subheader("Secondary (Pallet) Dimensions")
-    secondary_L = st.number_input(f"Pallet Length ({length_unit})", min_value=0.0)
-    secondary_W = st.number_input(f"Pallet Width ({length_unit})", min_value=0.0)
-    secondary_D = st.number_input(f"Pallet Height ({length_unit})", min_value=0.0)
+    secondary_L = st.number_input(f"Pallet Length ({length_unit})", min_value=0.0, key="secondary_L")
+    secondary_W = st.number_input(f"Pallet Width ({length_unit})", min_value=0.0, key="secondary_W")
+    secondary_D = st.number_input(f"Pallet Height ({length_unit})", min_value=0.0, key="secondary_D")
 
-    quantity_primary = st.number_input("Quantity per Primary Container", min_value=1)
-    primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0)
+    quantity_primary = st.number_input("Quantity per Primary Container", min_value=1, key="quantity_primary")
+
+    st.subheader("Weights")
+    primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0, key="primary_weight")
 
     # Convert to metric for calculations
     if unit_system.startswith("Imperial"):
@@ -88,84 +72,152 @@ if page == "Packaging Info":
         primary_L_cm, primary_W_cm, primary_D_cm = primary_L, primary_W, primary_D
         secondary_L_cm, secondary_W_cm, secondary_D_cm = secondary_L, secondary_W, secondary_D
 
-    # Pallet calculation
+    # --- Calculated Results ---
+    st.subheader("Calculated Pallet Results")
     if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
         layers = int(secondary_D_cm // primary_D_cm)
         total_boxes_per_pallet = boxes_per_layer * layers
+        st.write(f"**Boxes per layer:** {boxes_per_layer}")
+        st.write(f"**Layers:** {layers}")
+        st.write(f"**Total boxes per pallet:** {total_boxes_per_pallet}")
+
+        # Auto-calculate quantity per secondary container
         quantity_secondary = total_boxes_per_pallet * quantity_primary
-        st.write(f"Boxes per layer: {boxes_per_layer}, Layers: {layers}, Total boxes per pallet: {total_boxes_per_pallet}")
+        st.write(f"**Auto-calculated Quantity per Secondary Container:** {quantity_secondary}")
     else:
         total_boxes_per_pallet = 0
         quantity_secondary = 0
+        st.info("Enter all dimensions to calculate pallet results.")
 
-    # Secondary weight calculation
+    # Auto-calculate secondary weight
     pallet_weight_lb = 25
     pallet_weight_kg = pallet_weight_lb / 2.20462
-    secondary_weight = (primary_weight * total_boxes_per_pallet) + (pallet_weight_lb if unit_system.startswith("Imperial") else pallet_weight_kg)
+    if total_boxes_per_pallet > 0 and primary_weight > 0:
+        secondary_weight = (primary_weight * total_boxes_per_pallet) + (pallet_weight_lb if unit_system.startswith("Imperial") else pallet_weight_kg)
+    else:
+        secondary_weight = 0.0
 
-    st.number_input(f"Secondary Loaded Weight ({weight_unit})", value=secondary_weight, disabled=True)
+    # Display secondary weight as disabled input
+    st.number_input(f"Secondary Loaded Weight ({weight_unit})", value=secondary_weight, disabled=True, key="secondary_weight")
 
-    # Sustainability score
-    score = calculate_sustainability_score(sustainability)
-    st.progress(score)
-    st.write(f"Sustainability Score: {score}%")
+    # --- Container Analysis ---
+    st.subheader("Container Analysis")
+    container_specs = {
+        "40' Standard": {"L": 1200, "W": 235, "H": 239},
+        "40' High Cube": {"L": 1200, "W": 235, "H": 270},
+        "53' Trailer": {"L": 1600, "W": 260, "H": 279.4}
+    }
+    selected_container = st.selectbox("Select Container Type", list(container_specs.keys()))
 
-    # Cost estimation
-    estimated_cost = estimate_cost(material, primary_weight)
-    st.write(f"Estimated Packaging Cost: ${estimated_cost}")
+    if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0 and total_boxes_per_pallet > 0:
+        specs = container_specs[selected_container]
+        container_volume = specs["L"] * specs["W"] * specs["H"]
+        pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
+        rows = int(specs["L"] // secondary_L_cm)
+        cols = int(specs["W"] // secondary_W_cm)
+        stacks = int(specs["H"] // secondary_D_cm)
+        pallets_per_container = rows * cols * stacks
+        utilization = ((pallet_volume * pallets_per_container) / container_volume) * 100 if container_volume > 0 else 0
 
-    # Image upload
-    primary_img = st.file_uploader("Upload Primary Packaging Image", type=["jpg", "jpeg", "png"])
-    if primary_img:
-        st.image(primary_img, caption="Primary Packaging Preview", use_column_width=True)
+        st.write(f"**Cube Utilization for {selected_container}:** {utilization:.2f}%")
 
-    # Submit button
-    if st.button("Submit Packaging Info"):
-        if not supplier_name or primary_weight <= 0:
-            st.error("Please fill all required fields")
-        else:
-            submission = {
-                "Supplier Name": supplier_name,
-                "Material": material,
-                "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
-                "Weight": primary_weight,
-                "Quantity per Primary": quantity_primary,
-                "Quantity per Secondary": quantity_secondary,
-                "Secondary Weight": secondary_weight,
-                "Sustainability Score": score,
-                "Estimated Cost": estimated_cost
-            }
-            st.session_state["submissions"].append(submission)
-            st.success("Submission added!")
+        # 3D Visualization
+        fig = go.Figure()
+        container_edges = [
+            [(0, 0, 0), (specs["L"], 0, 0)],
+            [(0, specs["W"], 0), (specs["L"], specs["W"], 0)],
+            [(0, 0, specs["H"]), (specs["L"], 0, specs["H"])],
+            [(0, specs["W"], specs["H"]), (specs["L"], specs["W"], specs["H"])],
+            [(0, 0, 0), (0, specs["W"], 0)],
+            [(specs["L"], 0, 0), (specs["L"], specs["W"], 0)],
+            [(0, 0, specs["H"]), (0, specs["W"], specs["H"])],
+            [(specs["L"], 0, specs["H"]), (specs["L"], specs["W"], specs["H"])],
+            [(0, 0, 0), (0, 0, specs["H"])],
+            [(specs["L"], 0, 0), (specs["L"], 0, specs["H"])],
+            [(0, specs["W"], 0), (0, specs["W"], specs["H"])],
+            [(specs["L"], specs["W"], 0), (specs["L"], specs["W"], specs["H"])]
+        ]
+        for edge in container_edges:
+            fig.add_trace(go.Scatter3d(x=[edge[0][0], edge[1][0]], y=[edge[0][1], edge[1][1]], z=[edge[0][2], edge[1][2]], mode='lines', line=dict(color='gray', width=4), showlegend=False))
 
-# --- Page: Analytics ---
-if page == "Analytics":
-    st.title("📊 Analytics")
+        st.plotly_chart(fig, use_container_width=True)
+
+# --- Tab 3: Upload & Images ---
+with tab3:
+    st.header("Upload Testing & Images")
+    uploaded_files = st.file_uploader("Upload ISTA / UN Testing Reports", type=["pdf", "xlsx", "csv"], accept_multiple_files=True)
+    primary_img = st.file_uploader("Primary Packaging Image", type=["jpg", "jpeg", "png"], key="primary_img")
+    secondary_img = st.file_uploader("Secondary Packaging Image", type=["jpg", "jpeg", "png"], key="secondary_img")
+    unit_load_img = st.file_uploader("Full Unit Load Image", type=["jpg", "jpeg", "png"], key="unit_load_img")
+
+    if primary_img: st.image(primary_img, caption="Primary Packaging", use_column_width=True)
+    if secondary_img: st.image(secondary_img, caption="Secondary Packaging", use_column_width=True)
+    if unit_load_img: st.image(unit_load_img, caption="Full Unit Load", use_column_width=True)
+
+    if st.button("Submit Packaging Info", key="submit_btn"):
+        submission = {
+            "Supplier Name": supplier_name,
+            "Supplier Code": supplier_code,
+            "Contact": supplier_contact,
+            "Email": supplier_email,
+            "Phone": supplier_phone,
+            "Part Name": part_name,
+            "Part Number": part_number,
+            "Part Group": part_group,
+            "Material": material,
+            "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
+            "Weight": f"{primary_weight} ({weight_unit})",
+            "Quantity per Primary": quantity_primary,
+            "Quantity per Secondary": quantity_secondary,
+            "Secondary Weight": secondary_weight,
+            "Selected Container": selected_container,
+            "Uploaded Files": [file.name for file in uploaded_files] if uploaded_files else [],
+            "Primary Image": primary_img.name if primary_img else "",
+            "Secondary Image": secondary_img.name if secondary_img else "",
+            "Unit Load Image": unit_load_img.name if unit_load_img else ""
+        }
+        st.session_state["submissions"].append(submission)
+        st.success("Submission added!")
+
+# --- Tab 4: Supplier Dashboard ---
+with tab4:
+    st.header("Supplier Dashboard")
     if st.session_state["submissions"]:
         df = pd.DataFrame(st.session_state["submissions"])
+        st.subheader("Summary Metrics")
+        st.metric("Total Submissions", len(df))
+        st.metric("Unique Suppliers", df["Supplier Name"].nunique())
+        if "Secondary Weight" in df.columns:
+            st.metric("Avg Secondary Weight", f"{df['Secondary Weight'].mean():.2f}")
+        sort_column = st.selectbox("Sort by Column", df.columns)
+        sort_order = st.radio("Sort Order", ["Ascending", "Descending"])
+        df = df.sort_values(by=sort_column, ascending=(sort_order == "Ascending"))
         st.dataframe(df)
-        fig = px.bar(df, x="Supplier Name", y="Sustainability Score", title="Sustainability Scores")
-        st.plotly_chart(fig)
     else:
-        st.info("No submissions yet")
+        st.info("No submissions yet.")
 
-# --- Page: Export ---
-if page == "Export":
-    st.title("Export Data")
+# --- Tab 5: Search & Filter ---
+with tab5:
+    st.header("Search & Filter")
     if st.session_state["submissions"]:
         df = pd.DataFrame(st.session_state["submissions"])
-        st.download_button("Download CSV", df.to_csv(index=False), "submissions.csv")
-        to_excel = BytesIO()
-        df.to_excel(to_excel, index=False)
-        st.download_button("Download Excel", to_excel.getvalue(), "submissions.xlsx")
-        st.download_button("Download JSON", json.dumps(st.session_state["submissions"]), "submissions.json")
-    else:
-        st.info("No data to export")
+        supplier_filter = st.text_input("Filter by Supplier Name or Code")
+        part_name_filter = st.text_input("Filter by Part Name")
+        part_number_filter = st.text_input("Filter by Part Number")
+        part_group_filter = st.text_input("Filter by Part Group")
 
-# --- Page: API Simulation ---
-if page == "API Simulation":
-    st.title("API Simulation")
-    st.write("POST /api/submit-packaging")
-    if st.button("Simulate API Call"):
-        st.json(st.session_state["submissions"])
+        if supplier_filter:
+            df = df[df["Supplier Name"].str.contains(supplier_filter, case=False) | df["Supplier Code"].str.contains(supplier_filter, case=False)]
+        if part_name_filter:
+            df = df[df["Part Name"].str.contains(part_name_filter, case=False)]
+        if part_number_filter:
+            df = df[df["Part Number"].str.contains(part_number_filter, case=False)]
+        if part_group_filter:
+            df = df[df["Part Group"].str.contains(part_group_filter, case=False)]
+
+        st.dataframe(df)
+    else:
+        st.info("No submissions yet.")
+
+
