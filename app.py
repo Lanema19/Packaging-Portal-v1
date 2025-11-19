@@ -50,7 +50,7 @@ with st.form("compact_form"):
     with col8:
         primary_weight_metric = st.number_input("Primary Weight (kg)", min_value=0.0, key="primary_weight_metric")
     with col9:
-        st.markdown("**Primary Box Dimensions (cm)**")
+        st.markdown("**Primary Box Dimensions**")
         dim1, dim2, dim3 = st.columns(3)
         with dim1:
             primary_L_cm = st.number_input("Length", min_value=0.0, key="primary_L_cm")
@@ -59,14 +59,14 @@ with st.form("compact_form"):
         with dim3:
             primary_D_cm = st.number_input("Depth", min_value=0.0, key="primary_D_cm")
 
-    st.markdown("**Pallet Dimensions (cm)**")
+    st.markdown("**Pallet Dimensions**")
     pdim1, pdim2, pdim3 = st.columns(3)
     with pdim1:
-        secondary_L_cm = st.number_input("Length", min_value=0.0, key="pallet_L_cm")
+        secondary_L_cm = st.number_input("Length", min_value=0.0, key="secondary_L_cm")
     with pdim2:
-        secondary_W_cm = st.number_input("Width", min_value=0.0, key="pallet_W_cm")
+        secondary_W_cm = st.number_input("Width", min_value=0.0, key="secondary_W_cm")
     with pdim3:
-        secondary_D_cm = st.number_input("Height", min_value=0.0, key="pallet_D_cm")
+        secondary_D_cm = st.number_input("Height", min_value=0.0, key="secondary_D_cm")
 
     submitted = st.form_submit_button("Submit")
 
@@ -154,3 +154,4 @@ if st.session_state["submissions"]:
     st.dataframe(df)
 else:
     st.info("No submissions yet.")
+
