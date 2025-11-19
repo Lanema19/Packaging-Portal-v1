@@ -21,52 +21,52 @@ with st.form("compact_form"):
     st.subheader("Supplier & Part Info")
     col1, col2, col3 = st.columns(3)
     with col1:
-        supplier_name = st.text_input("Supplier Name")
-        supplier_contact = st.text_input("Contact Person")
+        supplier_name = st.text_input("Supplier Name", key="supplier_name")
+        supplier_contact = st.text_input("Contact Person", key="supplier_contact")
     with col2:
-        supplier_code = st.text_input("Supplier Code")
-        supplier_email = st.text_input("Email")
+        supplier_code = st.text_input("Supplier Code", key="supplier_code")
+        supplier_email = st.text_input("Email", key="supplier_email")
     with col3:
-        supplier_phone = st.text_input("Phone")
+        supplier_phone = st.text_input("Phone", key="supplier_phone")
     
     col4, col5, col6 = st.columns(3)
     with col4:
-        part_name = st.text_input("Part Name")
+        part_name = st.text_input("Part Name", key="part_name")
     with col5:
-        part_number = st.text_input("Part Number")
+        part_number = st.text_input("Part Number", key="part_number")
     with col6:
-        part_group = st.text_input("Part Group")
+        part_group = st.text_input("Part Group", key="part_group")
 
     st.subheader("Packaging Info")
-    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], horizontal=True)
+    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], horizontal=True, key="unit_system")
     is_metric = unit_system.startswith("Metric")
     length_unit = "cm" if is_metric else "in"
     weight_unit = "kg" if is_metric else "lb"
 
     col7, col8, col9 = st.columns(3)
     with col7:
-        material = st.selectbox("Material", ["Corrugated", "Plastic", "Metal", "Other"])
-        quantity_primary = st.number_input("Qty per Primary", min_value=1)
+        material = st.selectbox("Material", ["Corrugated", "Plastic", "Metal", "Other"], key="material")
+        quantity_primary = st.number_input("Qty per Primary", min_value=1, key="quantity_primary")
     with col8:
-        primary_weight_metric = st.number_input("Primary Weight (kg)", min_value=0.0)
+        primary_weight_metric = st.number_input("Primary Weight (kg)", min_value=0.0, key="primary_weight_metric")
     with col9:
         st.markdown("**Primary Box Dimensions (cm)**")
         dim1, dim2, dim3 = st.columns(3)
         with dim1:
-            primary_L_cm = st.number_input("Length", min_value=0.0)
+            primary_L_cm = st.number_input("Length", min_value=0.0, key="primary_L_cm")
         with dim2:
-            primary_W_cm = st.number_input("Width", min_value=0.0)
+            primary_W_cm = st.number_input("Width", min_value=0.0, key="primary_W_cm")
         with dim3:
-            primary_D_cm = st.number_input("Depth", min_value=0.0)
+            primary_D_cm = st.number_input("Depth", min_value=0.0, key="primary_D_cm")
 
     st.markdown("**Pallet Dimensions (cm)**")
     pdim1, pdim2, pdim3 = st.columns(3)
     with pdim1:
-        secondary_L_cm = st.number_input("Length", min_value=0.0)
+        secondary_L_cm = st.number_input("Length", min_value=0.0, key="pallet_L_cm")
     with pdim2:
-        secondary_W_cm = st.number_input("Width", min_value=0.0)
+        secondary_W_cm = st.number_input("Width", min_value=0.0, key="pallet_W_cm")
     with pdim3:
-        secondary_D_cm = st.number_input("Height", min_value=0.0)
+        secondary_D_cm = st.number_input("Height", min_value=0.0, key="pallet_D_cm")
 
     submitted = st.form_submit_button("Submit")
 
@@ -122,7 +122,7 @@ if submitted:
         "40' High Cube": {"L": 1200, "W": 235, "H": 270},
         "53' Trailer": {"L": 1600, "W": 260, "H": 279.4}
     }
-    selected_container = st.selectbox("Select Container Type", list(container_specs.keys()))
+    selected_container = st.selectbox("Select Container Type", list(container_specs.keys()), key="container_type")
     specs = container_specs[selected_container]
     container_volume = specs["L"] * specs["W"] * specs["H"]
     pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
