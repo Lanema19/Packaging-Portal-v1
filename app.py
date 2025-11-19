@@ -101,7 +101,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         # --- Realistic 3D Visualization ---
         fig = go.Figure()
 
-        # Container edges
+        # Container wireframe
         container_edges = [
             [(0, 0, 0), (specs["L"], 0, 0)],
             [(0, specs["W"], 0), (specs["L"], specs["W"], 0)],
@@ -126,36 +126,25 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                 showlegend=False
             ))
 
-        # Pallets with edges
+        # Solid pallets
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
                     x0 = r * secondary_L_cm
                     y0 = c * secondary_W_cm
                     z0 = s * secondary_D_cm
-                    pallet_edges = [
-                        [(x0, y0, z0), (x0+secondary_L_cm, y0, z0)],
-                        [(x0, y0+secondary_W_cm, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0)],
-                        [(x0, y0, z0+secondary_D_cm), (x0+secondary_L_cm, y0, z0+secondary_D_cm)],
-                        [(x0, y0+secondary_W_cm, z0+secondary_D_cm), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)],
-                        [(x0, y0, z0), (x0, y0+secondary_W_cm, z0)],
-                        [(x0+secondary_L_cm, y0, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0)],
-                        [(x0, y0, z0+secondary_D_cm), (x0, y0+secondary_W_cm, z0+secondary_D_cm)],
-                        [(x0+secondary_L_cm, y0, z0+secondary_D_cm), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)],
-                        [(x0, y0, z0), (x0, y0, z0+secondary_D_cm)],
-                        [(x0+secondary_L_cm, y0, z0), (x0+secondary_L_cm, y0, z0+secondary_D_cm)],
-                        [(x0, y0+secondary_W_cm, z0), (x0, y0+secondary_W_cm, z0+secondary_D_cm)],
-                        [(x0+secondary_L_cm, y0+secondary_W_cm, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)]
-                    ]
-                    for edge in pallet_edges:
-                        fig.add_trace(go.Scatter3d(
-                            x=[edge[0][0], edge[1][0]],
-                            y=[edge[0][1], edge[1][1]],
-                            z=[edge[0][2], edge[1][2]],
-                            mode='lines',
-                            line=dict(color='skyblue', width=3),
-                            showlegend=False
-                        ))
+                    fig.add_trace(go.Mesh3d(
+                        x=[x0, x0+secondary_L_cm, x0+secondary_L_cm, x0, x0, x0+secondary_L_cm, x0+secondary_L_cm, x0],
+                        y=[y0, y0, y0+secondary_W_cm, y0+secondary_W_cm, y0, y0, y0+secondary_W_cm, y0+secondary_W_cm],
+                        z=[z0, z0, z0, z0, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm],
+                        i=[0, 0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 6],
+                        j=[1, 2, 3, 2, 3, 3, 0, 0, 5, 6, 6, 7],
+                        k=[2, 3, 0, 3, 0, 0, 1, 1, 6, 7, 7, 4],
+                        color='saddlebrown',  # Wood-like color
+                        opacity=0.85,
+                        flatshading=True,
+                        showlegend=False
+                    ))
 
         fig.update_layout(
             scene=dict(
