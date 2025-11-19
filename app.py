@@ -45,6 +45,11 @@ with st.expander("Packaging Details"):
     supplier_name = st.text_input("Supplier Name", key="supplier_name")
     fragile = st.checkbox("Fragile?", key="fragile")
 
+    # --- Dunnage Selection ---
+    st.subheader("Dunnage")
+    primary_dunnage = st.selectbox("Primary Dunnage", ["Foam", "Dividers", "Bags", "Trays"], key="primary_dunnage")
+    secondary_dunnage = st.selectbox("Secondary Dunnage", ["Stretch Wrap", "Corner Boards", "Banding"], key="secondary_dunnage")
+
 # --- Convert to metric for calculations ---
 if unit_system == "Imperial (in/lb)":
     primary_L_cm = in_to_cm(primary_L)
@@ -63,10 +68,8 @@ else:
 # --- Calculations ---
 st.header("Calculated Results")
 
-# Pallet volume
 pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0 else 0
 
-# Primary boxes per pallet
 if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and pallet_volume > 0:
     boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
     layers = int(secondary_D_cm // primary_D_cm)
@@ -76,7 +79,6 @@ else:
     total_boxes_per_pallet = 0
     st.info("Enter all dimensions to calculate boxes per pallet.")
 
-# Container specs
 container_specs = {
     "40' Standard": {"L": 1200, "W": 235, "H": 239, "MaxWeight": 28000},
     "40' High Cube": {"L": 1200, "W": 235, "H": 270, "MaxWeight": 28000},
@@ -126,7 +128,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                 showlegend=False
             ))
 
-        # Solid pallets with all faces
+        # Solid pallets
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
@@ -152,7 +154,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                         i=faces_i,
                         j=faces_j,
                         k=faces_k,
-                        color='saddlebrown',  # Wood-like color
+                        color='saddlebrown',
                         opacity=0.9,
                         flatshading=True,
                         showlegend=False
@@ -181,7 +183,9 @@ if st.button("Submit Packaging Info", key="submit_btn"):
         "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({unit_system})",
         "Weight": f"{primary_weight} ({unit_system})",
         "Supplier": supplier_name,
-        "Fragile": fragile
+        "Fragile": fragile,
+        "Dunnage (Primary)": primary_dunnage,
+        "Dunnage (Secondary)": secondary_dunnage
     }
     st.session_state["submissions"].append(submission)
     st.success("Submission added!")
