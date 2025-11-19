@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from PIL import Image
 
 # --- App Config ---
@@ -42,38 +43,7 @@ with st.expander("Packaging Details"):
     primary_weight = st.number_input("Primary Loaded Weight", min_value=0.0, key="primary_weight")
     secondary_weight = st.number_input("Secondary Loaded Weight", min_value=0.0, key="secondary_weight")
 
-with st.expander("Part Details"):
-    part_length = st.number_input("Part Length", min_value=0.0, key="part_length")
-    part_width = st.number_input("Part Width", min_value=0.0, key="part_width")
-    part_depth = st.number_input("Part Depth", min_value=0.0, key="part_depth")
-    part_weight = st.number_input("Part Weight", min_value=0.0, key="part_weight")
-    fragile = st.checkbox("Fragile?", key="fragile")
-    hazard_code = st.text_input("Hazard Classification (UN/DG Code)", key="hazard_code")
-
-with st.expander("General Info"):
-    supplier_name = st.text_input("Supplier Name", key="supplier_name")
-    supplier_location = st.text_input("Supplier Location", key="supplier_location")
-    supplier_contact = st.text_input("Supplier Contact", key="supplier_contact")
-
-with st.expander("Uploads"):
-    uploaded_images = st.file_uploader("Upload Packaging Images", accept_multiple_files=True, type=["jpg", "jpeg", "png"], key="images_uploader")
-    if uploaded_images:
-        st.write("Preview of Uploaded Images:")
-        cols = st.columns(len(uploaded_images))
-        for idx, img_file in enumerate(uploaded_images):
-            img = Image.open(img_file)
-            cols[idx].image(img, caption=f"Image {idx+1}", use_column_width=True, key=f"image_{idx}")
-
-    uploaded_docs = st.file_uploader("Upload Compliance Documents", accept_multiple_files=True, type=["pdf", "docx"], key="docs_uploader")
-    if uploaded_docs:
-        st.write("Uploaded Documents:")
-        for doc in uploaded_docs:
-            st.write(f"- {doc.name}")
-
-# --- Calculations Section ---
-st.header("Calculated Results")
-
-# Convert all values to metric for calculations
+# --- Convert to metric for calculations ---
 if unit_system == "Imperial (in/lb)":
     primary_L_cm = in_to_cm(primary_L)
     primary_W_cm = in_to_cm(primary_W)
@@ -88,64 +58,67 @@ else:
     secondary_L_cm, secondary_W_cm, secondary_D_cm = secondary_L, secondary_W, secondary_D
     primary_weight_kg, secondary_weight_kg = primary_weight, secondary_weight
 
-# Cube utilization for pallet
+# --- Calculations ---
+st.header("Calculated Results")
+
+# Pallet volume
 if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
     pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
-    package_volume = primary_L_cm * primary_W_cm * primary_D_cm * quantity_primary
-    cube_utilization = (package_volume / pallet_volume) * 100 if pallet_volume > 0 else 0
-    st.metric("Cube Utilization (Pallet) (%)", f"{cube_utilization:.2f}")
 else:
-    st.warning("Enter pallet dimensions to calculate cube utilization.")
+    pallet_volume = 0
 
-# Primary Boxes per Pallet
-st.subheader("Primary Boxes per Pallet Calculation")
-if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
+# Primary boxes per pallet
+if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and pallet_volume > 0:
     boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
     layers = int(secondary_D_cm // primary_D_cm)
     total_boxes_per_pallet = boxes_per_layer * layers
-    st.write(f"Boxes per layer: {boxes_per_layer}")
-    st.write(f"Number of layers: {layers}")
-    st.success(f"Total Primary Boxes per Pallet: {total_boxes_per_pallet}")
+    st.write(f"Boxes per layer: {boxes_per_layer}, Layers: {layers}, Total boxes per pallet: {total_boxes_per_pallet}")
 else:
+    total_boxes_per_pallet = 0
     st.info("Enter all dimensions to calculate boxes per pallet.")
 
-# Container Fit, Pallets per Container, Parts per Container & Cube Utilization
-st.subheader("Container Fit, Pallets per Container, Parts per Container & Cube Utilization")
+# Container specs with updated trailer height (110 inches = 279.4 cm)
 container_specs = {
     "40' Standard": {"L": 1200, "W": 235, "H": 239, "MaxWeight": 28000},
     "40' High Cube": {"L": 1200, "W": 235, "H": 270, "MaxWeight": 28000},
-    "53' Trailer": {"L": 1600, "W": 260, "H": 260, "MaxWeight": 30000}
+    "53' Trailer": {"L": 1600, "W": 260, "H": 279.4, "MaxWeight": 30000}  # Updated height
 }
 
 if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
     for name, specs in container_specs.items():
+        st.subheader(f"{name}")
         container_volume = specs["L"] * specs["W"] * specs["H"]
-        fits = secondary_L_cm <= specs["L"] and secondary_W_cm <= specs["W"]
-
-        pallets_per_container = int(specs["L"] // secondary_L_cm) * int(specs["W"] // secondary_W_cm)
-        parts_per_container = pallets_per_container * total_boxes_per_pallet if 'total_boxes_per_pallet' in locals() else 0
+        rows = int(specs["L"] // secondary_L_cm)
+        cols = int(specs["W"] // secondary_W_cm)
+        pallets_per_container = rows * cols
+        parts_per_container = pallets_per_container * total_boxes_per_pallet
         utilization = ((pallet_volume * pallets_per_container) / container_volume) * 100 if container_volume > 0 else 0
 
-        st.write(f"**{name}**")
         st.write(f"Pallets per container: {pallets_per_container}")
         st.write(f"Parts per container: {parts_per_container}")
         st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
 
-        # Stacking validation
-        max_stack_height = specs["H"]
-        max_stack_weight = specs["MaxWeight"]
-        total_stack_height = secondary_D_cm * quantity_secondary
-        total_stack_weight = secondary_weight_kg * quantity_secondary
+        # Visualization
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ax.set_title(f"{name} Layout")
+        ax.set_xlim(0, specs["L"])
+        ax.set_ylim(0, specs["W"])
+        ax.set_xlabel("Length (cm)")
+        ax.set_ylabel("Width (cm)")
 
-        if fits:
-            if total_stack_height <= max_stack_height and total_stack_weight <= max_stack_weight:
-                st.success(f"✅ Fits and stacking within limits (Height: {total_stack_height:.2f} cm, Weight: {total_stack_weight:.2f} kg)")
-            else:
-                st.error(f"❌ Fits but stacking exceeds limits! Height: {total_stack_height:.2f} cm, Weight: {total_stack_weight:.2f} kg")
-        else:
-            st.error("❌ Pallet does NOT fit in this container.")
+        # Draw container outline
+        ax.add_patch(plt.Rectangle((0, 0), specs["L"], specs["W"], fill=None, edgecolor='black', linewidth=2))
+
+        # Draw pallets
+        for r in range(rows):
+            for c in range(cols):
+                x = r * secondary_L_cm
+                y = c * secondary_W_cm
+                ax.add_patch(plt.Rectangle((x, y), secondary_L_cm, secondary_W_cm, color='skyblue', alpha=0.6))
+
+        st.pyplot(fig)
 else:
-    st.info("Enter pallet dimensions to validate container fit and utilization.")
+    st.info("Enter pallet dimensions to calculate container fit and visualization.")
 
 # --- Submission Section ---
 if st.button("Submit Packaging Info", key="submit_btn"):
@@ -153,12 +126,11 @@ if st.button("Submit Packaging Info", key="submit_btn"):
         "Material": material,
         "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({unit_system})",
         "Weight": f"{primary_weight} ({unit_system})",
-        "Supplier": supplier_name,
-        "Fragile": fragile
+        "Supplier": supplier_name if 'supplier_name' in locals() else '',
+        "Fragile": fragile if 'fragile' in locals() else False
     }
     st.session_state["submissions"].append(submission)
     st.success("Submission added!")
 
 st.write("Current Submissions:")
 st.dataframe(pd.DataFrame(st.session_state["submissions"]))
-
