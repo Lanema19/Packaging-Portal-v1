@@ -1,4 +1,5 @@
 streamlit
 pillow
 pandas
-matplotlib
+plotly
+
