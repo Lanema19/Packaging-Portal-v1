@@ -52,7 +52,6 @@ with tab2:
     secondary_D = st.number_input(f"Pallet Height ({length_unit})", min_value=0.0, key="secondary_D")
 
     quantity_primary = st.number_input("Quantity per Primary Container", min_value=1, key="quantity_primary")
-    quantity_secondary = st.number_input("Quantity per Secondary Container", min_value=1, key="quantity_secondary")
 
     st.subheader("Weights")
     primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0, key="primary_weight")
@@ -79,11 +78,16 @@ with tab2:
         st.write(f"**Boxes per layer:** {boxes_per_layer}")
         st.write(f"**Layers:** {layers}")
         st.write(f"**Total boxes per pallet:** {total_boxes_per_pallet}")
+
+        # Auto-calculate quantity per secondary container
+        quantity_secondary = total_boxes_per_pallet * quantity_primary
+        st.write(f"**Auto-calculated Quantity per Secondary Container:** {quantity_secondary}")
     else:
         total_boxes_per_pallet = 0
+        quantity_secondary = 0
         st.info("Enter all dimensions to calculate pallet results.")
 
-    # --- Container Analysis under Packaging Info ---
+    # --- Container Analysis ---
     st.subheader("Container Analysis")
     container_specs = {
         "40' Standard": {"L": 1200, "W": 235, "H": 239},
@@ -211,6 +215,8 @@ with tab3:
             "Material": material,
             "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
             "Weight": f"{primary_weight} ({weight_unit})",
+            "Quantity per Primary": quantity_primary,
+            "Quantity per Secondary": quantity_secondary,
             "Selected Container": selected_container,
             "Uploaded Files": [file.name for file in uploaded_files] if uploaded_files else [],
             "Primary Image": primary_img.name if primary_img else "",
