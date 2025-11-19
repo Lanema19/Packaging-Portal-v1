@@ -244,4 +244,3 @@ with tab3:
     if st.button("Download Submissions as CSV"):
         df = pd.DataFrame(st.session_state["submissions"])
         st.download_button("Download CSV", df.to_csv(index=False), "submissions.csv", "text/csv")
-
