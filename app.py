@@ -63,6 +63,10 @@ with st.form("compact_form"):
     with col12:
         secondary_D = st.number_input(f"Pallet Height ({length_unit})", min_value=0.0)
 
+    submitted = st.form_submit_button("Submit")
+
+# --- Calculations ---
+if submitted:
     # Convert to metric for calculations
     if unit_system.startswith("Imperial"):
         primary_L_cm = in_to_cm(primary_L)
@@ -75,16 +79,16 @@ with st.form("compact_form"):
         primary_L_cm, primary_W_cm, primary_D_cm = primary_L, primary_W, primary_D
         secondary_L_cm, secondary_W_cm, secondary_D_cm = secondary_L, secondary_W, secondary_D
 
-    # Calculations
-    if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
+    # Pallet calculations
+    if all(v > 0 for v in [primary_L_cm, primary_W_cm, primary_D_cm, secondary_L_cm, secondary_W_cm, secondary_D_cm]):
         boxes_per_layer = int(secondary_L_cm // primary_L_cm) * int(secondary_W_cm // primary_W_cm)
         layers = int(secondary_D_cm // primary_D_cm)
         total_boxes_per_pallet = boxes_per_layer * layers
         quantity_secondary = total_boxes_per_pallet * quantity_primary
     else:
-        total_boxes_per_pallet = 0
-        quantity_secondary = 0
+        boxes_per_layer = layers = total_boxes_per_pallet = quantity_secondary = 0
 
+    # Weight calculations
     pallet_weight_lb = 25
     pallet_weight_kg = pallet_weight_lb / 2.20462
     if total_boxes_per_pallet > 0 and primary_weight > 0:
@@ -92,6 +96,7 @@ with st.form("compact_form"):
     else:
         secondary_weight = 0.0
 
+    # Container analysis
     selected_container = st.selectbox("Container Type", ["40' Standard", "40' High Cube", "53' Trailer"])
     container_specs = {
         "40' Standard": {"L": 1200, "W": 235, "H": 239},
@@ -101,12 +106,15 @@ with st.form("compact_form"):
     specs = container_specs[selected_container]
     container_volume = specs["L"] * specs["W"] * specs["H"]
     pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
-    rows = int(specs["L"] // secondary_L_cm)
-    cols = int(specs["W"] // secondary_W_cm)
-    stacks = int(specs["H"] // secondary_D_cm)
+
+    rows = int(specs["L"] // secondary_L_cm) if secondary_L_cm > 0 else 0
+    cols = int(specs["W"] // secondary_W_cm) if secondary_W_cm > 0 else 0
+    stacks = int(specs["H"] // secondary_D_cm) if secondary_D_cm > 0 else 0
     pallets_per_container = rows * cols * stacks
     utilization = ((pallet_volume * pallets_per_container) / container_volume) * 100 if container_volume > 0 else 0
 
+    # Display metrics
+    st.subheader("📊 Calculated Metrics")
     st.metric("Boxes per Layer", boxes_per_layer)
     st.metric("Layers", layers)
     st.metric("Total Boxes per Pallet", total_boxes_per_pallet)
@@ -114,31 +122,30 @@ with st.form("compact_form"):
     st.metric("Secondary Weight", f"{secondary_weight:.2f} {weight_unit}")
     st.metric("Container Utilization", f"{utilization:.2f}%")
 
-    submitted = st.form_submit_button("Submit")
-    if submitted:
-        submission = {
-            "Supplier Name": supplier_name,
-            "Supplier Code": supplier_code,
-            "Contact": supplier_contact,
-            "Email": supplier_email,
-            "Phone": supplier_phone,
-            "Part Name": part_name,
-            "Part Number": part_number,
-            "Part Group": part_group,
-            "Material": material,
-            "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
-            "Weight": f"{primary_weight} ({weight_unit})",
-            "Quantity per Primary": quantity_primary,
-            "Quantity per Secondary": quantity_secondary,
-            "Secondary Weight": secondary_weight,
-            "Selected Container": selected_container,
-            "Utilization": utilization
-        }
-        st.session_state["submissions"].append(submission)
-        st.success("Submission saved!")
+    # Save submission
+    submission = {
+        "Supplier Name": supplier_name,
+        "Supplier Code": supplier_code,
+        "Contact": supplier_contact,
+        "Email": supplier_email,
+        "Phone": supplier_phone,
+        "Part Name": part_name,
+        "Part Number": part_number,
+        "Part Group": part_group,
+        "Material": material,
+        "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
+        "Weight": f"{primary_weight} ({weight_unit})",
+        "Quantity per Primary": quantity_primary,
+        "Quantity per Secondary": quantity_secondary,
+        "Secondary Weight": secondary_weight,
+        "Selected Container": selected_container,
+        "Utilization": utilization
+    }
+    st.session_state["submissions"].append(submission)
+    st.success("Submission saved!")
 
 # --- Dashboard ---
-st.subheader("📊 Supplier Dashboard")
+st.subheader("📦 Supplier Dashboard")
 if st.session_state["submissions"]:
     df = pd.DataFrame(st.session_state["submissions"])
     st.metric("Total Submissions", len(df))
@@ -150,4 +157,5 @@ if st.session_state["submissions"]:
     st.dataframe(df)
 else:
     st.info("No submissions yet.")
+
 
