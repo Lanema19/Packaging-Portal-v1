@@ -98,41 +98,72 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         st.write(f"Parts per container: {parts_per_container}")
         st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
 
-        # --- 3D Visualization ---
+        # --- Realistic 3D Visualization ---
         fig = go.Figure()
 
-        # Container wireframe
-        fig.add_trace(go.Mesh3d(
-            x=[0, specs["L"], specs["L"], 0, 0, specs["L"], specs["L"], 0],
-            y=[0, 0, specs["W"], specs["W"], 0, 0, specs["W"], specs["W"]],
-            z=[0, 0, 0, 0, specs["H"], specs["H"], specs["H"], specs["H"]],
-            color='lightgray',
-            opacity=0.1,
-            name='Container'
-        ))
+        # Container edges
+        container_edges = [
+            [(0, 0, 0), (specs["L"], 0, 0)],
+            [(0, specs["W"], 0), (specs["L"], specs["W"], 0)],
+            [(0, 0, specs["H"]), (specs["L"], 0, specs["H"])],
+            [(0, specs["W"], specs["H"]), (specs["L"], specs["W"], specs["H"])],
+            [(0, 0, 0), (0, specs["W"], 0)],
+            [(specs["L"], 0, 0), (specs["L"], specs["W"], 0)],
+            [(0, 0, specs["H"]), (0, specs["W"], specs["H"])],
+            [(specs["L"], 0, specs["H"]), (specs["L"], specs["W"], specs["H"])],
+            [(0, 0, 0), (0, 0, specs["H"])],
+            [(specs["L"], 0, 0), (specs["L"], 0, specs["H"])],
+            [(0, specs["W"], 0), (0, specs["W"], specs["H"])],
+            [(specs["L"], specs["W"], 0), (specs["L"], specs["W"], specs["H"])]
+        ]
+        for edge in container_edges:
+            fig.add_trace(go.Scatter3d(
+                x=[edge[0][0], edge[1][0]],
+                y=[edge[0][1], edge[1][1]],
+                z=[edge[0][2], edge[1][2]],
+                mode='lines',
+                line=dict(color='gray', width=4),
+                showlegend=False
+            ))
 
-        # Pallets inside container
+        # Pallets with edges
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
                     x0 = r * secondary_L_cm
                     y0 = c * secondary_W_cm
                     z0 = s * secondary_D_cm
-                    fig.add_trace(go.Mesh3d(
-                        x=[x0, x0+secondary_L_cm, x0+secondary_L_cm, x0, x0, x0+secondary_L_cm, x0+secondary_L_cm, x0],
-                        y=[y0, y0, y0+secondary_W_cm, y0+secondary_W_cm, y0, y0, y0+secondary_W_cm, y0+secondary_W_cm],
-                        z=[z0, z0, z0, z0, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm],
-                        color='skyblue',
-                        opacity=0.5,
-                        name='Pallet'
-                    ))
+                    pallet_edges = [
+                        [(x0, y0, z0), (x0+secondary_L_cm, y0, z0)],
+                        [(x0, y0+secondary_W_cm, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0)],
+                        [(x0, y0, z0+secondary_D_cm), (x0+secondary_L_cm, y0, z0+secondary_D_cm)],
+                        [(x0, y0+secondary_W_cm, z0+secondary_D_cm), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)],
+                        [(x0, y0, z0), (x0, y0+secondary_W_cm, z0)],
+                        [(x0+secondary_L_cm, y0, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0)],
+                        [(x0, y0, z0+secondary_D_cm), (x0, y0+secondary_W_cm, z0+secondary_D_cm)],
+                        [(x0+secondary_L_cm, y0, z0+secondary_D_cm), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)],
+                        [(x0, y0, z0), (x0, y0, z0+secondary_D_cm)],
+                        [(x0+secondary_L_cm, y0, z0), (x0+secondary_L_cm, y0, z0+secondary_D_cm)],
+                        [(x0, y0+secondary_W_cm, z0), (x0, y0+secondary_W_cm, z0+secondary_D_cm)],
+                        [(x0+secondary_L_cm, y0+secondary_W_cm, z0), (x0+secondary_L_cm, y0+secondary_W_cm, z0+secondary_D_cm)]
+                    ]
+                    for edge in pallet_edges:
+                        fig.add_trace(go.Scatter3d(
+                            x=[edge[0][0], edge[1][0]],
+                            y=[edge[0][1], edge[1][1]],
+                            z=[edge[0][2], edge[1][2]],
+                            mode='lines',
+                            line=dict(color='skyblue', width=3),
+                            showlegend=False
+                        ))
 
         fig.update_layout(
             scene=dict(
                 xaxis_title='Length (cm)',
                 yaxis_title='Width (cm)',
                 zaxis_title='Height (cm)',
-                aspectmode='data'
+                aspectmode='data',
+                camera=dict(eye=dict(x=1.5, y=1.5, z=1.2))
             ),
             margin=dict(l=0, r=0, t=30, b=0),
             title=f"{name} 3D Layout"
