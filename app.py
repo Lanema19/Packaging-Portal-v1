@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-from PIL import Image
+import plotly.graph_objects as go
 
 # --- App Config ---
-st.set_page_config(page_title="Packaging Portal", layout="wide")
+st.set_page_config(page_title="📦 Packaging Portal", layout="wide")
 
 st.title("📦 Packaging Portal")
 st.write("Manage packaging details, validate container fit, and calculate utilization.")
@@ -43,6 +42,9 @@ with st.expander("Packaging Details"):
     primary_weight = st.number_input("Primary Loaded Weight", min_value=0.0, key="primary_weight")
     secondary_weight = st.number_input("Secondary Loaded Weight", min_value=0.0, key="secondary_weight")
 
+    supplier_name = st.text_input("Supplier Name", key="supplier_name")
+    fragile = st.checkbox("Fragile?", key="fragile")
+
 # --- Convert to metric for calculations ---
 if unit_system == "Imperial (in/lb)":
     primary_L_cm = in_to_cm(primary_L)
@@ -62,10 +64,7 @@ else:
 st.header("Calculated Results")
 
 # Pallet volume
-if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
-    pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm
-else:
-    pallet_volume = 0
+pallet_volume = secondary_L_cm * secondary_W_cm * secondary_D_cm if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0 else 0
 
 # Primary boxes per pallet
 if primary_L_cm > 0 and primary_W_cm > 0 and primary_D_cm > 0 and pallet_volume > 0:
@@ -77,11 +76,11 @@ else:
     total_boxes_per_pallet = 0
     st.info("Enter all dimensions to calculate boxes per pallet.")
 
-# Container specs with updated trailer height (110 inches = 279.4 cm)
+# Container specs
 container_specs = {
     "40' Standard": {"L": 1200, "W": 235, "H": 239, "MaxWeight": 28000},
     "40' High Cube": {"L": 1200, "W": 235, "H": 270, "MaxWeight": 28000},
-    "53' Trailer": {"L": 1600, "W": 260, "H": 279.4, "MaxWeight": 30000}  # Updated height
+    "53' Trailer": {"L": 1600, "W": 260, "H": 279.4, "MaxWeight": 30000}
 }
 
 if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
@@ -90,7 +89,8 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         container_volume = specs["L"] * specs["W"] * specs["H"]
         rows = int(specs["L"] // secondary_L_cm)
         cols = int(specs["W"] // secondary_W_cm)
-        pallets_per_container = rows * cols
+        stacks = int(specs["H"] // secondary_D_cm)
+        pallets_per_container = rows * cols * stacks
         parts_per_container = pallets_per_container * total_boxes_per_pallet
         utilization = ((pallet_volume * pallets_per_container) / container_volume) * 100 if container_volume > 0 else 0
 
@@ -98,25 +98,51 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         st.write(f"Parts per container: {parts_per_container}")
         st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
 
-        # Visualization
-        fig, ax = plt.subplots(figsize=(6, 3))
-        ax.set_title(f"{name} Layout")
-        ax.set_xlim(0, specs["L"])
-        ax.set_ylim(0, specs["W"])
-        ax.set_xlabel("Length (cm)")
-        ax.set_ylabel("Width (cm)")
+        # --- 3D Visualization ---
+        fig = go.Figure()
 
-        # Draw container outline
-        ax.add_patch(plt.Rectangle((0, 0), specs["L"], specs["W"], fill=None, edgecolor='black', linewidth=2))
+        # Container wireframe
+        fig.add_trace(go.Mesh3d(
+            x=[0, specs["L"], specs["L"], 0, 0, specs["L"], specs["L"], 0],
+            y=[0, 0, specs["W"], specs["W"], 0, 0, specs["W"], specs["W"]],
+            z=[0, 0, 0, 0, specs["H"], specs["H"], specs["H"], specs["H"]],
+            color='lightgray',
+            opacity=0.1,
+            name='Container'
+        ))
 
-        # Draw pallets
+        # Pallets inside container
+        pallet_boxes = []
         for r in range(rows):
             for c in range(cols):
-                x = r * secondary_L_cm
-                y = c * secondary_W_cm
-                ax.add_patch(plt.Rectangle((x, y), secondary_L_cm, secondary_W_cm, color='skyblue', alpha=0.6))
+                for s in range(stacks):
+                    x0 = r * secondary_L_cm
+                    y0 = c * secondary_W_cm
+                    z0 = s * secondary_D_cm
+                    pallet_boxes.append(go.Mesh3d(
+                        x=[x0, x0+secondary_L_cm, x0+secondary_L_cm, x0, x0, x0+secondary_L_cm, x0+secondary_L_cm, x0],
+                        y=[y0, y0, y0+secondary_W_cm, y0+secondary_W_cm, y0, y0, y0+secondary_W_cm, y0+secondary_W_cm],
+                        z=[z0, z0, z0, z0, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm],
+                        color='skyblue',
+                        opacity=0.5,
+                        name='Pallet'
+                    ))
 
-        st.pyplot(fig)
+        for pallet in pallet_boxes:
+            fig.add_trace(pallet)
+
+        fig.update_layout(
+            scene=dict(
+                xaxis_title='Length (cm)',
+                yaxis_title='Width (cm)',
+                zaxis_title='Height (cm)',
+                aspectmode='data'
+            ),
+            margin=dict(l=0, r=0, t=30, b=0),
+            title=f"{name} 3D Layout"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Enter pallet dimensions to calculate container fit and visualization.")
 
@@ -126,11 +152,12 @@ if st.button("Submit Packaging Info", key="submit_btn"):
         "Material": material,
         "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({unit_system})",
         "Weight": f"{primary_weight} ({unit_system})",
-        "Supplier": supplier_name if 'supplier_name' in locals() else '',
-        "Fragile": fragile if 'fragile' in locals() else False
+        "Supplier": supplier_name,
+        "Fragile": fragile
     }
     st.session_state["submissions"].append(submission)
     st.success("Submission added!")
 
 st.write("Current Submissions:")
 st.dataframe(pd.DataFrame(st.session_state["submissions"]))
+
