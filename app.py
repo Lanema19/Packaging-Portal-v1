@@ -126,22 +126,34 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                 showlegend=False
             ))
 
-        # Solid pallets
+        # Solid pallets with all faces
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
                     x0 = r * secondary_L_cm
                     y0 = c * secondary_W_cm
                     z0 = s * secondary_D_cm
+                    x1 = x0 + secondary_L_cm
+                    y1 = y0 + secondary_W_cm
+                    z1 = z0 + secondary_D_cm
+
+                    vertices_x = [x0, x1, x1, x0, x0, x1, x1, x0]
+                    vertices_y = [y0, y0, y1, y1, y0, y0, y1, y1]
+                    vertices_z = [z0, z0, z0, z0, z1, z1, z1, z1]
+
+                    faces_i = [0, 0, 4, 4, 0, 1, 2, 2, 0, 3, 1, 5]
+                    faces_j = [1, 2, 5, 6, 1, 2, 6, 7, 3, 7, 5, 6]
+                    faces_k = [2, 3, 6, 7, 4, 5, 7, 4, 7, 4, 6, 2]
+
                     fig.add_trace(go.Mesh3d(
-                        x=[x0, x0+secondary_L_cm, x0+secondary_L_cm, x0, x0, x0+secondary_L_cm, x0+secondary_L_cm, x0],
-                        y=[y0, y0, y0+secondary_W_cm, y0+secondary_W_cm, y0, y0, y0+secondary_W_cm, y0+secondary_W_cm],
-                        z=[z0, z0, z0, z0, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm, z0+secondary_D_cm],
-                        i=[0, 0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 6],
-                        j=[1, 2, 3, 2, 3, 3, 0, 0, 5, 6, 6, 7],
-                        k=[2, 3, 0, 3, 0, 0, 1, 1, 6, 7, 7, 4],
+                        x=vertices_x,
+                        y=vertices_y,
+                        z=vertices_z,
+                        i=faces_i,
+                        j=faces_j,
+                        k=faces_k,
                         color='saddlebrown',  # Wood-like color
-                        opacity=0.85,
+                        opacity=0.9,
                         flatshading=True,
                         showlegend=False
                     ))
