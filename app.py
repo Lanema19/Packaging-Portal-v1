@@ -18,40 +18,43 @@ def in_to_cm(inch): return inch * 2.54
 def kg_to_lb(kg): return kg * 2.20462
 def lb_to_kg(lb): return lb / 2.20462
 
-# --- Expanders for Sections ---
+# --- Unit Labels ---
+unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], key="unit_system")
+length_unit = "cm" if unit_system.startswith("Metric") else "in"
+weight_unit = "kg" if unit_system.startswith("Metric") else "lb"
+
+# --- Packaging Details ---
 with st.expander("Packaging Details"):
     material = st.selectbox("Material Type", ["Corrugated", "Plastic", "Metal", "Other"], key="material")
     sustainability = st.multiselect("Sustainability Indicators", ["Recyclable", "Reusable", "Biodegradable"], key="sustainability")
 
-    unit_system = st.radio("Unit System", ["Metric (cm/kg)", "Imperial (in/lb)"], key="unit_system")
-
     st.subheader("Primary Dimensions")
-    primary_L = st.number_input("Length", min_value=0.0, key="primary_L")
-    primary_W = st.number_input("Width", min_value=0.0, key="primary_W")
-    primary_D = st.number_input("Depth", min_value=0.0, key="primary_D")
+    primary_L = st.number_input(f"Length ({length_unit})", min_value=0.0, key="primary_L")
+    primary_W = st.number_input(f"Width ({length_unit})", min_value=0.0, key="primary_W")
+    primary_D = st.number_input(f"Depth ({length_unit})", min_value=0.0, key="primary_D")
 
     st.subheader("Secondary (Pallet) Dimensions")
-    secondary_L = st.number_input("Length", min_value=0.0, key="secondary_L")
-    secondary_W = st.number_input("Width", min_value=0.0, key="secondary_W")
-    secondary_D = st.number_input("Height", min_value=0.0, key="secondary_D")
+    secondary_L = st.number_input(f"Pallet Length ({length_unit})", min_value=0.0, key="secondary_L")
+    secondary_W = st.number_input(f"Pallet Width ({length_unit})", min_value=0.0, key="secondary_W")
+    secondary_D = st.number_input(f"Pallet Height ({length_unit})", min_value=0.0, key="secondary_D")
 
     quantity_primary = st.number_input("Quantity per Primary Container", min_value=1, key="quantity_primary")
     quantity_secondary = st.number_input("Quantity per Secondary Container", min_value=1, key="quantity_secondary")
 
     st.subheader("Weights")
-    primary_weight = st.number_input("Primary Loaded Weight", min_value=0.0, key="primary_weight")
-    secondary_weight = st.number_input("Secondary Loaded Weight", min_value=0.0, key="secondary_weight")
+    primary_weight = st.number_input(f"Primary Loaded Weight ({weight_unit})", min_value=0.0, key="primary_weight")
+    secondary_weight = st.number_input(f"Secondary Loaded Weight ({weight_unit})", min_value=0.0, key="secondary_weight")
 
+# --- Supplier Section ---
+with st.expander("Supplier Information"):
     supplier_name = st.text_input("Supplier Name", key="supplier_name")
-    fragile = st.checkbox("Fragile?", key="fragile")
-
-    # --- Dunnage Selection ---
-    st.subheader("Dunnage")
-    primary_dunnage = st.selectbox("Primary Dunnage", ["Foam", "Dividers", "Bags", "Trays"], key="primary_dunnage")
-    secondary_dunnage = st.selectbox("Secondary Dunnage", ["Stretch Wrap", "Corner Boards", "Banding"], key="secondary_dunnage")
+    supplier_code = st.text_input("Supplier Code", key="supplier_code")
+    supplier_contact = st.text_input("Contact Person", key="supplier_contact")
+    supplier_email = st.text_input("Email", key="supplier_email")
+    supplier_phone = st.text_input("Phone", key="supplier_phone")
 
 # --- Convert to metric for calculations ---
-if unit_system == "Imperial (in/lb)":
+if unit_system.startswith("Imperial"):
     primary_L_cm = in_to_cm(primary_L)
     primary_W_cm = in_to_cm(primary_W)
     primary_D_cm = in_to_cm(primary_D)
@@ -100,7 +103,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         st.write(f"Parts per container: {parts_per_container}")
         st.write(f"Cube Utilization (Container) (%): {utilization:.2f}")
 
-        # --- Realistic 3D Visualization ---
+        # Visualization (realistic pallets)
         fig = go.Figure()
 
         # Container wireframe
@@ -128,7 +131,7 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
                 showlegend=False
             ))
 
-        # Solid pallets
+        # Pallets
         for r in range(rows):
             for c in range(cols):
                 for s in range(stacks):
@@ -173,19 +176,19 @@ if secondary_L_cm > 0 and secondary_W_cm > 0 and secondary_D_cm > 0:
         )
 
         st.plotly_chart(fig, use_container_width=True)
-else:
-    st.info("Enter pallet dimensions to calculate container fit and visualization.")
 
 # --- Submission Section ---
 if st.button("Submit Packaging Info", key="submit_btn"):
     submission = {
         "Material": material,
-        "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({unit_system})",
-        "Weight": f"{primary_weight} ({unit_system})",
-        "Supplier": supplier_name,
-        "Fragile": fragile,
-        "Dunnage (Primary)": primary_dunnage,
-        "Dunnage (Secondary)": secondary_dunnage
+        "Dimensions": f"{primary_L}x{primary_W}x{primary_D} ({length_unit})",
+        "Weight": f"{primary_weight} ({weight_unit})",
+        "Supplier Name": supplier_name,
+        "Supplier Code": supplier_code,
+        "Contact": supplier_contact,
+        "Email": supplier_email,
+        "Phone": supplier_phone,
+        "Fragile": fragile
     }
     st.session_state["submissions"].append(submission)
     st.success("Submission added!")
